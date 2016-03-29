@@ -1,0 +1,234 @@
+"theme setting
+colorscheme molokai
+set t_Co=256
+
+"normal setting
+set nocompatible
+set ruler
+set nowrap
+set linebreak
+set number
+set noswapfile
+set wildmenu
+set wildignore=*.o,*~,*.pyc,*.o.cmd
+if v:version >= 703
+	set cursorline
+	set tabpagemax=32
+endif	
+
+set history=1024
+set laststatus=2
+set lazyredraw
+
+set backspace=eol,start,indent
+set whichwrap+=<,>,h,l
+
+set listchars=tab:»·,trail:·
+set wrap
+
+"syntax setting
+syntax on
+set ignorecase
+set smartcase
+set incsearch
+
+set magic
+set modeline
+set fileformats=unix,dos,mac
+
+set showmatch
+set showcmd
+
+"indent 
+filetype plugin indent on
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+autocmd BufRead,BufNewFile *.c,*.cpp,*.cc,*.ph,*.inc,*.h set expandtab cindent
+autocmd FileType make set noexpandtab
+set smarttab
+set autoindent
+"set smartindent
+set nosmartindent
+set foldmethod=syntax
+set foldlevel=99
+
+
+"encoding setting
+set encoding=utf-8
+set fileencodings=ucs-bom,utf-8,cp936,gb18030,big5,euc-jp,euc-kr,latin1
+set fo+=mB
+
+
+set statusline=%F%m%r%h%w\
+set statusline+=%=%({%{&ff}\|%{(&fenc==\"\"?&enc:&fenc).((exists(\"+bomb\")\ &&\ &bomb)?\",B\":\"\")}%k\|%Y}%)\ %([%l,%v][%P]%)
+
+
+"tag setting
+set tag=./tags,./TAGS,tags,TAGS
+
+"highlight clear 
+set hlsearch
+highlight ColorColumn ctermbg=yellow guibg=lightyellow
+highlight OverLength ctermbg=yellow ctermfg=white guibg=lightgrey
+
+" F* key mapping 
+nnoremap <F2> :set nonumber!<CR>:set foldcolumn=0<CR>:set nolist<CR>
+map <F3> <Esc>:NERDTree<CR>
+map <F9> <Esc>:NERDTreeToggle<CR>
+map <F10> <Esc>:NERDTreeFind<CR>
+map <F5> :set list! <CR>
+map <F6> :set paste! <CR>
+map <F7> :TlistToggle <CR>
+
+
+" Fmt() function -- format C/C++/Bash file
+function Fmt()
+	"取得当前光标所在的行号、列号
+	let lineNum = line(".")
+	let colNum = col(".")
+
+	" .c文件
+	if &filetype == 'c'
+		" 调用外部程序astyle
+		exec "%!astyle"
+		" .h文件
+	elseif &filetype == 'cpp'
+		exec "%!astyle"
+		" .java文件
+	elseif &filetype == 'java'
+		exec "%!astyle"
+	else
+		" echo "Not support ".&filetype." type files."
+		normal gg=G
+	endif
+
+	" " format all *.c
+	" :args *.c
+	" :argdo normal gg=G
+	" :wall
+
+	":bufdo normal gg=G
+	:wall
+	:call cursor(lineNum,colNum)
+endfunction
+map ff :call Fmt() <CR>
+
+""""""""""""""""""""""""""""""""""""""""""""""""
+"  tags setting -- include ctags/cscope/taglist
+""""""""""""""""""""""""""""""""""""""""""""""""
+" tag setting
+set tag=./tags,./TAGS,tags,TAGS
+" load cscope and ctags 
+if has("cscope")
+	"set cscopequickfix=s-,c-,d-,i-,t-,e-
+	set csto=0
+	set cst
+	set csverb
+	let csoutpath=system("mkcstags --auto-load")
+	if filereadable(csoutpath)
+		execute "cs add ". csoutpath
+		let ctagsfilepath = csoutpath . "/tags"
+		set tags+=ctagsfilepath
+	endif
+endif
+
+function Make_Tags()
+	if(executable("mkcstags") && has("ctags") && has("cscope") )
+		call "mkcstags ." 
+		echo "mkcstags return"
+	endif
+endfunction
+map mt :call Make_Tags() <CR>
+
+function! UpdateTags()
+	let curdir=getcwd()
+	while !filereadable("cscope/tags")
+		cd ..
+		if getcwd() == "/"
+			break
+		endif
+	endwhile
+	if filewritable("cscope/tags")
+		call "mkcstags ."
+		TlistUpdate
+	endif
+	execute ":cd" . curdir
+endfunction
+map rt :call UpdateTags() <CR>
+
+"tag list
+let Tlist_Ctags_Cmd='/usr/local/bin/ctags'
+let Tlist_Show_One_File = 1
+let Tlist_Exit_OnlyWindow = 1 
+let Tlist_Use_Right_Window = 1
+
+""""""""""""""""""""""""""""""""""""""""""""
+map <F4> :call TitleDet()<cr>'s
+function AddTitle()
+	if &filetype == 'sh'
+		call AddTitle_bash()
+	elseif &filetype == 'c'
+		call AddTitle_c()
+	else
+		echo "no support filetype==".&filetype
+	endif
+endfunction
+function AddTitle_bash()
+	call append(1,"#======================================================")
+	call append(2,"# Author: dingzengjian - d00228505")
+	call append(3,"# ")
+	call append(4,"# Last modified: ".strftime("%Y-%m-%d %H:%M"))
+	call append(5,"# ")
+	call append(6,"# Filename: ".expand("%.t"))
+	call append(7,"# ")
+	call append(8,"# Description:  ")
+	call append(9,"# ")
+	call append(10,"#======================================================")
+	echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+function AddTitle_c()
+	call append(0,"/*******************************************************")
+	call append(1,"# Author: dingzengjian - d00228505")
+	call append(2,"# ")
+	call append(3,"# Last modified: ".strftime("%Y-%m-%d %H:%M"))
+	call append(4,"# ")
+	call append(5,"# Filename: ".expand("%.t"))
+	call append(6,"# ")
+	call append(7,"# Description:  ")
+	call append(8,"# ")
+	call append(9,"*******************************************************/")
+	echohl WarningMsg | echo "Successful in adding the copyright." | echohl None
+endfunction
+
+function UpdateTitle()
+	normal m'
+	execute '/# *Last modified:/s@:.*$@\=strftime(": %Y-%m-%d %H:%M")@'
+	normal ''
+	normal mk
+	execute '/# *Filename:/s@:.*$@\=": ".expand("%:t")@'
+	execute "noh"
+	normal 'k
+	echohl WarningMsg | echo "Successful in updating the copy right." | echohl None
+endfunction
+
+function TitleDet()
+	let n=1
+	"默认为添加
+	while n < 10
+		let line = getline(n)
+		if line =~ '^\#\s*\S*Last\smodified:\S*.*$'
+			call UpdateTitle()
+			return
+		endif
+		let n=n+1
+	endwhile
+	call AddTitle()
+endfunction
+
+
+"for session
+:let g:session_autosave = 'no'
+:let g:session_autoload = 'no'
+

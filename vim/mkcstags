@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#################
+# create_tags()
+#################
+create_tags(){
+	local dir=.
+	if [ $# -ne 0 ];then
+		dir=$*
+	fi
+	for d in $dir
+	do
+		[ ! -d $d ] && return 1
+		cd $d 
+		# make cscope tags
+		[ ! -d cscope ] && mkdir cscope
+		find $CUR_DIR -name *.h -o -name *.c -o -name *.cpp -o -name *.m -o -name *.mm -o -name *.java -o -name *.py > cscope/cscope.files
+		cscope -b -i cscope/cscope.files
+		mv cscope.out cscope/cscope.out
+		#make ctags 
+		ctags -R $d --file-scope=yes --langmap=c:+.h --languages=c,c++ --links=yes --c-kinds=+p --c++-kinds=+p --fields=+iaS --extra=+q 
+		mv tags cscope/
+		return 0
+	done
+	return 0
+}
+Usage(){
+	echo "Usage: mkcstags [--auto-load|MAKE_TAGS_DIRS]"
+}
+# main 
+CUR_DIR=`pwd`
+main(){
+	if [ $# -eq 0 ];then
+		Usage
+		return 1
+	fi
+
+	case $1 in
+		--auto-load)
+		tmp_dir="$CUR_DIR"
+		while [ 1 ]
+		do
+			if [ -e $tmp_dir/cscope/cscope.out ];then
+				echo -n $tmp_dir/cscope/cscope.out
+				break
+			fi
+			tmp_dir=${tmp_dir%\/*}
+			if [ x$tmp_dir == x ];then
+				break
+			fi
+		done
+		return 0
+		;;
+		*)
+		create_tags $*
+		;;
+	esac
+}
+
+main $*
+exit $?
+
